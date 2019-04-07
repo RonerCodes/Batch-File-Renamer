@@ -42,14 +42,11 @@ namespace FileRenamer
         private bool _firstTimeRan = false;
 
         // statics
-        private static MainWindow _mainWindow;
+        //private static MainWindow _mainWindow;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            if (_mainWindow == null)
-                _mainWindow = this;
 
             _dispatcherTimer.Tick += _dispatcherTimer_Tick;
             _dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 1500);
@@ -61,13 +58,13 @@ namespace FileRenamer
             if (_isProcessing)
                 return;
 
-            if (_mainWindow._textChangeCount > 0)
+            if (_textChangeCount > 0)
             {
                 _isProcessing = true;
 
-                _mainWindow._textChangeCount = 0;
+                _textChangeCount = 0;
 
-                _mainWindow.RenameForPreview();
+                RenameForPreview();
 
                 _isProcessing = false;
             }
@@ -217,10 +214,6 @@ namespace FileRenamer
 
         private void RenameForPreview()
         {
-            // validate chars
-            var invalidChars = F.Path.GetInvalidFileNameChars();
-
-
 
             var newExt = !string.IsNullOrEmpty(textBoxExtension.Text) ? '.' + textBoxExtension.Text : "";
 
@@ -261,13 +254,38 @@ namespace FileRenamer
             RenameForPreview();
         }
 
-
+        // TextChanged event method used by all text boxes in GUI
         private void RecordPresses(object sender, TextChangedEventArgs e)
         {
+            var textBox = (TextBox)sender;
+            
+            // capture  invalid chars first
+            var invalidChars = F.Path.GetInvalidFileNameChars();
+            var allChars = textBox.Text;
+
+            for (int i = 0; i < allChars.Count(); i++)
+            {
+                if (invalidChars.Contains(allChars[i]))
+                {
+                   textBlockInvalidChar.Text = $"Invalid character: {allChars[i]}";
+
+                    textBox.Text = allChars.Remove(i, 1);
+                    textBox.CaretIndex = i;
+                }
+
+            }
+
+
+
             if (!_dispatcherTimer.IsEnabled)
                 _dispatcherTimer.Start();
 
             _textChangeCount++;
+        }
+
+        private void TextBoxPrepend_KeyDown(object sender, KeyEventArgs e)
+        {
+            textBlockInvalidChar.Text = string.Empty;
         }
     }
 }
