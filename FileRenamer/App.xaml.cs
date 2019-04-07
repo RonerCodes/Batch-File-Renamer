@@ -23,6 +23,10 @@ namespace FileRenamer
             {
                 main.FileListStartupArgs = e.Args;
             }
+            else
+            {
+                main.FileListStartupArgs = new string[0];
+            }
 
             main.Show();
         }

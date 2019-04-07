@@ -41,9 +41,6 @@ namespace FileRenamer
         private int _exceptionThrownCount = 0;
         private bool _firstTimeRan = false;
 
-        // statics
-        //private static MainWindow _mainWindow;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -72,8 +69,25 @@ namespace FileRenamer
 
         private void FillListIn()
         {
+
+            foreach (var path in FileListStartupArgs)
+            {
+                var fileInfo = new FileInfo(path);
+
+                _fileEntities.Add(new FileEntity
+                {
+                    FileInfo = fileInfo,
+                    OriginalName = fileInfo.Name,
+                    ID = fileInfo.GetHashCode()
+                });
+            }
+
+
             listBoxFilesIn.ItemsSource = _fileEntities.OrderBy(x => x.FileInfo.Name)
                 .Select(x => x.OriginalName);
+
+
+            RenameForPreview();
         }
 
 
@@ -237,28 +251,20 @@ namespace FileRenamer
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            foreach (var path in FileListStartupArgs)
+            if (FileListStartupArgs.Length == 0)
+                textBlockDropFiles.Visibility = Visibility.Visible;
+            else
             {
-                var fileInfo = new FileInfo(path);
-
-                _fileEntities.Add(new FileEntity
-                {
-                    FileInfo = fileInfo,
-                    OriginalName = fileInfo.Name,
-                    ID = fileInfo.GetHashCode()
-                });
+                FillListIn();
             }
 
-            FillListIn();
-
-            RenameForPreview();
         }
 
         // TextChanged event method used by all text boxes in GUI
         private void RecordPresses(object sender, TextChangedEventArgs e)
         {
             var textBox = (TextBox)sender;
-            
+
             // capture  invalid chars first
             var invalidChars = F.Path.GetInvalidFileNameChars();
             var allChars = textBox.Text;
@@ -267,7 +273,7 @@ namespace FileRenamer
             {
                 if (invalidChars.Contains(allChars[i]))
                 {
-                   textBlockInvalidChar.Text = $"Invalid character: {allChars[i]}";
+                    textBlockInvalidChar.Text = $"Invalid character: {allChars[i]}";
 
                     textBox.Text = allChars.Remove(i, 1);
                     textBox.CaretIndex = i;
@@ -283,9 +289,38 @@ namespace FileRenamer
             _textChangeCount++;
         }
 
-        private void TextBoxPrepend_KeyDown(object sender, KeyEventArgs e)
+        private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            textBlockInvalidChar.Text = string.Empty;
+            if (!string.IsNullOrEmpty(textBlockInvalidChar.Text))
+                textBlockInvalidChar.Text = string.Empty;
+        }
+
+        private void FilesDroppedEvent(object sender, DragEventArgs e)
+        {
+            string[] fileList = null;
+
+            try
+            {
+                fileList = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+
+                FileListStartupArgs = fileList;
+
+                // clear ListBoxes in case
+                _fileEntities.Clear();
+                listBoxFilesIn.ItemsSource = null;
+                listBoxFilesIn.Items.Clear();
+                listBoxFilesOut.ItemsSource = null;
+                listBoxFilesOut.Items.Clear();
+
+                // fresh fill
+                FillListIn();
+
+                textBlockDropFiles.Visibility = Visibility.Hidden;
+            }
+            catch (InvalidCastException)
+            {
+                MessageBox.Show("You can only drop files here!", "Drop Error", MessageBoxButton.OK);
+            }
         }
     }
 }
