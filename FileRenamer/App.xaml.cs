@@ -9,17 +9,14 @@ using System.Windows;
 
 namespace FileRenamer
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
-        
+
         private void AppStartup(object sender, StartupEventArgs e)
         {
             MainWindow main = new MainWindow();
 
-            if(e.Args.Length > 0)
+            if (e.Args.Length > 0)
             {
                 main.FileListStartupArgs = e.Args;
             }
@@ -29,6 +26,19 @@ namespace FileRenamer
             }
 
             main.Show();
+
+
+
+            var shortcutCheck = new SendToShortcutCheck();
+
+            try
+            {
+                shortcutCheck.CreateOrUpdateLink();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not create shortcut in your SendTo context menu.\n\r" + ex.Message);
+            }
         }
     }
 }
